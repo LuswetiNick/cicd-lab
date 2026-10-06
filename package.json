@@ -2,6 +2,7 @@
   "name": "cicd-lab",
   "version": "1.0.0",
   "description": "",
+  "packageManager": "pnpm@12.9.1",
   "main": "index.js",
   "engines": {
     "node": "24.x"
