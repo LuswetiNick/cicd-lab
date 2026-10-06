@@ -1,134 +1,115 @@
 # CI/CD Lab
 
-This project is a lightweight Express + TypeScript application built to demonstrate a simple CI/CD workflow. The app exposes a home page and a health-check endpoint, and it is designed to be validated automatically with tests, type checking, and a production build before deployment.
+A small Express and TypeScript application for demonstrating a simple CI/CD pipeline. GitHub Actions installs the dependencies and runs type checking, tests, and a production build. The app is deployed on Render.
 
-## Overview
+## Features
 
-The CI/CD lab focuses on the core automation steps commonly used in modern software delivery:
+- Home page that displays the running app and its version
+- Health check at `/api/health`
+- Version endpoint at `/api/version`
+- GitHub Actions verification on pushes and pull requests targeting `main`
+- Production build and start scripts suitable for Render
 
-- Install dependencies
-- Run static validation
-- Execute automated tests
-- Build the production bundle
-- Deploy the app after successful verification
-
-The goal is to keep the example small and easy to understand while illustrating real-world release automation.
-
-## Tech Stack
+## Tech stack
 
 - Node.js 24
+- pnpm 12.9.1
+- Express 5
 - TypeScript
-- Express
 - Node.js test runner
 
-## Project Structure
+## Project structure
 
 ```text
 .
+├── .github/workflows/ci.yml  # CI verification workflow
 ├── src/
-│   ├── app.ts         # Express app and routes
-│   └── server.ts      # Starts the HTTP server
+│   ├── app.ts                # Express app and routes
+│   └── server.ts             # HTTP server entry point
 ├── test/
-│   └── app.test.ts    # Health endpoint test
-├── dist/              # Generated production build
-├── package.json       # Scripts and dependency configuration
-├── tsconfig.json      # TypeScript compiler settings
-├── .gitignore         # Ignore build and dependency files
-└── README.md
+│   └── app.test.ts           # Endpoint tests
+├── package.json              # Scripts, dependencies, and tool versions
+├── pnpm-lock.yaml            # Locked dependency versions
+└── tsconfig.json             # TypeScript compiler configuration
 ```
 
-## Getting Started
+## Run locally
 
-Install dependencies:
+Install the pinned pnpm version (12.9.1) and use Node.js 24. Then install the locked dependencies:
 
 ```bash
-npm install
+pnpm install --frozen-lockfile
 ```
 
-Start the app in development mode:
+Start the development server:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
-Then open:
+By default, the app listens on port `3000`:
 
-- http://localhost:3000/
-- http://localhost:3000/api/health
+- Home page: `http://localhost:3000/`
+- Health check: `http://localhost:3000/api/health`
+- Version: `http://localhost:3000/api/version`
 
 The health endpoint returns:
 
 ```json
-{ "status": "ok" }
+{"status":"ok"}
 ```
 
-## Available Scripts
+The version endpoint returns the value of `APP_VERSION`, or `"development"` if it is unset:
+
+```json
+{"version":"development"}
+```
+
+## Scripts
+
+| Command | Description |
+| --- | --- |
+| `pnpm run dev` | Run the server in watch mode for development. |
+| `pnpm run typecheck` | Check TypeScript without emitting files. |
+| `pnpm test` | Run the endpoint tests. |
+| `pnpm run build` | Compile the app into `dist/`. |
+| `pnpm start` | Run the compiled app from `dist/`. |
+| `pnpm run verify` | Run type checking, tests, and the production build. |
+
+Before opening a pull request or deploying, run the complete local verification:
 
 ```bash
-npm run dev
+pnpm install --frozen-lockfile
+pnpm run verify
 ```
-Runs the server with automatic restarts during development.
 
-```bash
-npm run typecheck
-```
-Checks the TypeScript code without generating a build output.
+## CI workflow
 
-```bash
-npm test
-```
-Runs the automated health test against the app.
+The workflow in `.github/workflows/ci.yml` runs for pushes and pull requests targeting `main`. It sets up Node.js 24 and pnpm 12.9.1, installs dependencies with the frozen lockfile, and runs `pnpm run verify`. A failed type check, test, or build fails the workflow.
 
-```bash
-npm run build
-```
-Compiles the TypeScript project into the `dist` directory.
+The GitHub Actions workflow verifies the code; it does not itself deploy the app. Deployment is handled by the Render service configuration.
 
-```bash
-npm start
-```
-Starts the compiled application from `dist`.
+## Deploy on Render
 
-```bash
-npm run verify
-```
-Performs the full validation pipeline locally:
+Connect this GitHub repository to a Render **Web Service**. Configure the service with:
 
-1. Type-check the project
-2. Run tests
-3. Build the app
+- **Runtime:** Node
+- **Build command:** `pnpm install --frozen-lockfile && pnpm run build`
+- **Start command:** `pnpm start`
 
-This is the same logic typically used in CI before deployment.
+The `packageManager` field in `package.json` pins pnpm to `12.9.1`, and the `engines` field specifies Node.js `24.x`. Render provides the `PORT` environment variable; the server listens on that port and binds to `0.0.0.0`, as required for the hosted service.
 
-## Local CI/CD Flow
+You can optionally set `APP_VERSION` in the Render service's environment variables. Its value appears on the home page and in the `/api/version` response. Without it, the app reports `"development"`.
 
-A simple pipeline for this project looks like this:
-
-1. Code is pushed to the repository.
-2. CI installs dependencies.
-3. TypeScript is checked for errors.
-4. Automated tests run.
-5. The application is compiled.
-6. If all checks pass, the app is deployed.
-
-This keeps the release process fast, repeatable, and less error-prone.
+After deployment, open the public URL provided by Render and check `/`, `/api/health`, and `/api/version`.
 
 ## Configuration
 
-The server listens on port `3000` by default, unless you set the `PORT` environment variable. The home page also reads `APP_VERSION`, which defaults to `development` when it is not provided.
+- `PORT` — HTTP port; defaults to `3000` locally. Set automatically by Render.
+- `APP_VERSION` — version displayed by the app; defaults to `development`.
 
-Example:
+For example, on macOS or Linux:
 
 ```bash
-PORT=4000 APP_VERSION=v1.2.0 npm run dev
+PORT=4000 APP_VERSION=v1.2.0 pnpm run dev
 ```
-
-## Purpose
-
-This repository is intentionally minimal so it can be used as a practical training project for learning CI/CD fundamentals, including:
-
-- automated validation
-- build verification
-- deploy-ready project structure
-- repeatable delivery pipelines
-
